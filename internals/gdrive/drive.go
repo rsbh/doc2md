@@ -1,44 +1,49 @@
 package gdrive
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-
-	"google.golang.org/api/docs/v1"
-	"google.golang.org/api/drive/v3"
 )
 
-const mimeTypeDocument = "application/vnd.google-apps.document"
-const mimeTypeFolder = "application/vnd.google-apps.folder"
-const mimeTypeSheet = "application/vnd.google-apps.spreadsheet"
-
-// Service to fetch files
-type Service struct {
-	driveSrv *drive.Service
-	docSrv   *docs.Service
+func generateQuery(folderID string) string {
+	var f = ""
+	if folderID != "" {
+		f = fmt.Sprintf("'%v' in parents and ", folderID)
+	}
+	query := fmt.Sprintf("%v(mimeType='%v' or mimeType='%v' or mimeType='%v') and trashed = false", f, mimeTypeDocument, mimeTypeFolder, mimeTypeSheet)
+	return query
 }
 
 // GetFiles return google drive files
-func (s Service) GetFiles(folderID string) {
-	var q = ""
-	if folderID != "" {
-		q = fmt.Sprintf("'%v' in parents and ", folderID)
+func (s *Service) GetFiles(folderID string) {
+	query := generateQuery(folderID)
+	r, err := s.drive.Files.List().SupportsTeamDrives(true).IncludeTeamDriveItems(true).Q(query).Do()
+	if err != nil {
+		log.Fatalf("Unable to retrieve files: %v", err)
 	}
-	query := fmt.Sprintf("%v(mimeType='%v' or mimeType='%v' or mimeType='%v') and trashed = false", q, mimeTypeDocument, mimeTypeFolder, mimeTypeSheet)
-	fmt.Println(query)
+	if len(r.Files) == 0 {
+		fmt.Println("No Drives found.")
+	} else {
+		for _, i := range r.Files {
+			if i.MimeType == mimeTypeDocument {
+				s.fetchDoc(i.Id)
+			} else {
+				fmt.Printf("%s (%s) (%s)\n", i.Name, i.Id, i.MimeType)
+			}
+		}
+	}
 }
 
-// Init initialize the services
-func (s Service) Init(client *http.Client) {
-	driveSrv, err := drive.New(client)
+func (s *Service) fetchDoc(docID string) {
+	doc, err := s.doc.Documents.Get(docID).Do()
 	if err != nil {
-		log.Fatalf("Unable to retrieve Drive client: %v", err)
+		log.Fatalf("Unable to retrieve doc: %v", err)
 	}
-	docsSrv, err := docs.New(client)
+
+	prettyJSON, err := json.MarshalIndent(doc.Body, "", "    ")
 	if err != nil {
-		log.Fatalf("Unable to retrieve Doc client: %v", err)
+		log.Fatal("Failed to generate json", err)
 	}
-	s.driveSrv = driveSrv
-	s.docSrv = docsSrv
+	fmt.Printf("%s\n", string(prettyJSON))
 }

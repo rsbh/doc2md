@@ -45,7 +45,7 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 	readConfig(cfgFile)
 	c := auth.GetConfig("", "")
 	client := auth.GetClient(c, tok)
-	s := gdrive.Service{}
+	s := &gdrive.Service{}
 	s.Init(client)
 	s.GetFiles(configuration.FolderID)
 }
