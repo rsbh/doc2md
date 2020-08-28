@@ -7,6 +7,7 @@ import (
 
 	"github.com/rsbh/doc2md/internals/auth"
 	"github.com/rsbh/doc2md/internals/config"
+	"github.com/rsbh/doc2md/internals/gdrive"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -40,14 +41,13 @@ func readConfig(cfgFile string) {
 func runRootCmd(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	tokenFile, _ := cmd.Flags().GetString("token")
-	_ = auth.GetToken(tokenFile)
-
+	tok := auth.GetToken(tokenFile)
 	readConfig(cfgFile)
-
-	err := os.MkdirAll(configuration.OutDir, os.ModePerm)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	c := auth.GetConfig("", "")
+	client := auth.GetClient(c, tok)
+	s := gdrive.Service{}
+	s.Init(client)
+	s.GetFiles(configuration.FolderID)
 }
 
 func init() {

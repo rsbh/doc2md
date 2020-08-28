@@ -1,9 +1,11 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/spf13/viper"
@@ -102,4 +104,9 @@ func GetToken(tokenFile string) *oauth2.Token {
 		log.Fatalln("Token is unavailable, Pass token from file or ENV")
 	}
 	return token
+}
+
+// GetClient returns the generated client.
+func GetClient(config *oauth2.Config, tok *oauth2.Token) *http.Client {
+	return config.Client(context.Background(), tok)
 }
