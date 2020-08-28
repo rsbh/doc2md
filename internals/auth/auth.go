@@ -65,5 +65,40 @@ func saveToken(path string, token *oauth2.Token) {
 func SaveToken(path string, config *oauth2.Config) {
 	token := getTokenFromWeb(config)
 	saveToken(path, token)
-	fmt.Println(token)
+	fmt.Println("Token saved at", path)
+}
+
+func tokenFromFile(file string) (*oauth2.Token, error) {
+	f, err := os.Open(file)
+	defer f.Close()
+	if err != nil {
+		return nil, err
+	}
+	tok := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(tok)
+	return tok, err
+}
+
+func tokenFromENV() (*oauth2.Token, error) {
+	t := os.Getenv("TOKEN")
+	tok := &oauth2.Token{}
+	err := json.Unmarshal([]byte(t), tok)
+	if err != nil {
+		return nil, err
+	}
+	return tok, err
+}
+
+// GetToken Get Token from env or file
+func GetToken(tokenFile string) *oauth2.Token {
+	var token *oauth2.Token
+	if _, err := os.Stat(tokenFile); err == nil {
+		token, _ = tokenFromFile(tokenFile)
+	} else {
+		token, _ = tokenFromENV()
+	}
+	if token == nil {
+		log.Fatalln("Token is unavailable, Pass token from file or ENV")
+	}
+	return token
 }
