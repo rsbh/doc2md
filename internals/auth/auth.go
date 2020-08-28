@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
@@ -25,8 +26,8 @@ func GetConfig(clientID, clientSecret string) *oauth2.Config {
 
 // GetClientCredentials return clientID and clientSecret
 func GetClientCredentials() (string, string) {
-	clientID := os.Getenv("CLIENT_ID")
-	clientSecret := os.Getenv("CLIENT_SECRET")
+	clientID := viper.GetString("CLIENT_ID")
+	clientSecret := viper.GetString("CLIENT_SECRET")
 	if clientID == "" || clientSecret == "" {
 		log.Fatal("CLIENT_ID and CLIENT_SECRET is not available in env")
 	}
@@ -80,7 +81,7 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 }
 
 func tokenFromENV() (*oauth2.Token, error) {
-	t := os.Getenv("TOKEN")
+	t := viper.GetString("TOKEN")
 	tok := &oauth2.Token{}
 	err := json.Unmarshal([]byte(t), tok)
 	if err != nil {
