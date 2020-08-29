@@ -38,9 +38,14 @@ func getText(e *docs.ParagraphElement) string {
 	return text
 }
 
-type M map[string]string
+type S struct {
+	Text  string
+	Image ImageObject
+}
 
-func all(vs []M, f func(M) bool) bool {
+type TagContent map[string]S
+
+func all(vs []TagContent, f func(TagContent) bool) bool {
 	for _, v := range vs {
 		if !f(v) {
 			return false
@@ -49,49 +54,71 @@ func all(vs []M, f func(M) bool) bool {
 	return true
 }
 
-func getTagContent(p *docs.Paragraph, tag string) []M {
-	var tagContent []M
+func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObject) []TagContent {
+	var tagContent []TagContent
 	for _, e := range p.Elements {
 
 		tr := e.TextRun
-		if tr != nil {
+		if e.InlineObjectElement != nil {
+			i := getImage(ios, e.InlineObjectElement.InlineObjectId)
+			x := TagContent{"img": {"", i}}
+			tagContent = append(tagContent, x)
+		} else if tr != nil && tr.Content != "\n" {
 			// headingID := p.ParagraphStyle.HeadingId
 			text := getText(e)
-			x := M{tag: text}
+			x := TagContent{tag: {text, ImageObject{}}}
 			tagContent = append(tagContent, x)
 		}
 	}
 
-	if all(tagContent, func(m M) bool { return m[tag] != "" }) {
+	if all(tagContent, func(m TagContent) bool { return m[tag].Text != "" }) {
 		var a []string
 		for _, tc := range tagContent {
-			a = append(a, tc[tag])
+			a = append(a, tc[tag].Text)
 		}
 		s := strings.Join(a, " ")
 		s = strings.ReplaceAll(s, " .", ".")
 		s = strings.ReplaceAll(s, " ,", ",")
-		return []M{M{tag: s}}
+		return []TagContent{{tag: {s, ImageObject{}}}}
 	} else {
 		return tagContent
 	}
 }
 
-func getParagraph(p *docs.Paragraph) []M {
-	var tc []M
+func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject) []TagContent {
+	var tc []TagContent
 	t := p.ParagraphStyle.NamedStyleType
 	tag := tags[t]
 	if tag != "" {
-		tc = getTagContent(p, tag)
+		tc = getTagContent(p, tag, ios)
 	}
 	return tc
 }
 
+type ImageObject struct {
+	Source      string
+	Title       string
+	Description string
+}
+
+func getImage(ios map[string]docs.InlineObject, objectID string) ImageObject {
+	var image ImageObject
+	eo := ios[objectID].InlineObjectProperties.EmbeddedObject
+
+	if eo != nil && eo.ImageProperties != nil {
+		image = ImageObject{eo.ImageProperties.ContentUri, eo.Title, eo.Description}
+	}
+	return image
+}
+
 // DocToJSON Convert docs api response to json
-func DocToJSON(b *docs.Body) []M {
-	var content []M
+func DocToJSON(doc *docs.Document) []TagContent {
+	b := doc.Body
+	ios := doc.InlineObjects
+	var content []TagContent
 	for _, s := range b.Content {
 		if s.Paragraph != nil {
-			c := getParagraph(s.Paragraph)
+			c := getParagraph(s.Paragraph, ios)
 			content = append(content, c...)
 		}
 	}

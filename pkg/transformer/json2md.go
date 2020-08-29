@@ -1,6 +1,7 @@
 package transformer
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -18,8 +19,12 @@ func getHeader(text string, repeat int) string {
 	return h + " " + text
 }
 
+func getImageTag(i ImageObject) string {
+	return fmt.Sprintf("![%v](%v %v)", i.Title, i.Source, i.Title)
+}
+
 //JSONToMD convert json to markdown
-func JSONToMD(json []M) string {
+func JSONToMD(json []TagContent) string {
 	var content []string
 	for _, j := range json {
 		keys := make([]string, 0, len(j))
@@ -29,11 +34,14 @@ func JSONToMD(json []M) string {
 		key := keys[0]
 		i, ok := headings[key]
 		if ok {
-			s := getHeader(j[key], i)
+			s := getHeader(j[key].Text, i)
 			content = append(content, s, "\n")
 		} else if key == "p" {
-			s := j[key]
+			s := j[key].Text
 			content = append(content, s, "\n")
+		} else if key == "img" {
+			i := getImageTag(j[key].Image)
+			content = append(content, i, "\n")
 		}
 	}
 	return strings.Join(content, "")

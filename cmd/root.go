@@ -26,6 +26,8 @@ var configuration config.Configurations
 func readConfig(cfgFile string) {
 	viper.SetConfigFile(cfgFile)
 	viper.SetDefault("outDir", defaultOutDir)
+	viper.SetDefault("breakDoc", false)
+	viper.SetDefault("supportCodeBlock", false)
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("Error reading config file, %s", err)
