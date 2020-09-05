@@ -23,6 +23,10 @@ func getImageTag(i ImageObject) string {
 	return fmt.Sprintf("![%v](%v %v)", i.Title, i.Source, i.Title)
 }
 
+func getList(i ImageObject) string {
+	return fmt.Sprintf("![%v](%v %v)", i.Title, i.Source, i.Title)
+}
+
 //JSONToMD convert json to markdown
 func JSONToMD(json []TagContent) string {
 	var content []string
@@ -42,6 +46,8 @@ func JSONToMD(json []TagContent) string {
 		} else if key == "img" {
 			i := getImageTag(j[key].Image)
 			content = append(content, i, "\n")
+		} else {
+			fmt.Println(j[key].Text)
 		}
 	}
 	return strings.Join(content, "")

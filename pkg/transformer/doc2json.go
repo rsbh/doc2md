@@ -85,12 +85,50 @@ func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObje
 	}
 }
 
-func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject) []TagContent {
+func getListType(lists map[string]docs.List, listID string) string {
+	t := "ol"
+	gt := lists[listID].ListProperties.NestingLevels[0].GlyphType
+	if gt == "" {
+		t = "ul"
+	}
+	return t
+}
+
+func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElement) S {
+	var s S
+	if e.InlineObjectElement != nil {
+		i := getImage(ios, e.InlineObjectElement.InlineObjectId)
+		t := getImageTag(i)
+		s = S{t, i}
+	} else {
+		t := getText(e)
+		s = S{t, ImageObject{}}
+	}
+	return s
+}
+
+func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map[string]docs.List) []TagContent {
 	var tc []TagContent
-	t := p.ParagraphStyle.NamedStyleType
-	tag := tags[t]
-	if tag != "" {
-		tc = getTagContent(p, tag, ios)
+	if p.Bullet != nil {
+		listID := p.Bullet.ListId
+		listTag := getListType(lists, listID)
+		var bulletContents []string
+		for _, e := range p.Elements {
+			s := getBulletContents(ios, e)
+			if s.Text != "" {
+				bulletContents = append(bulletContents, s.Text)
+			}
+		}
+		bc := strings.Join(bulletContents, " ")
+		bc = strings.ReplaceAll(bc, " .", ".")
+		bc = strings.ReplaceAll(bc, " ,", ",")
+		tc = append(tc, TagContent{listTag: {bc, ImageObject{}}})
+	} else {
+		t := p.ParagraphStyle.NamedStyleType
+		tag := tags[t]
+		if tag != "" {
+			tc = getTagContent(p, tag, ios)
+		}
 	}
 	return tc
 }
@@ -111,16 +149,53 @@ func getImage(ios map[string]docs.InlineObject, objectID string) ImageObject {
 	return image
 }
 
+type TocHeading struct {
+	HeadingID string       `json:"headingId"`
+	Text      string       `json:"text"`
+	Indent    float64      `json:"indent"`
+	Items     []TocHeading `json:"items"`
+}
+
+func getToc(data *docs.TableOfContents) []*TocHeading {
+	var toc []*TocHeading
+	var cur *TocHeading
+	for _, c := range data.Content {
+		text := c.Paragraph.Elements[0].TextRun.Content
+		headingID := c.Paragraph.Elements[0].TextRun.TextStyle.Link.HeadingId
+		indent := c.Paragraph.ParagraphStyle.IndentStart.Magnitude
+		if indent == 0 {
+			t := TocHeading{headingID, text, indent, []TocHeading{}}
+			toc = append(toc, &t)
+			cur = &t
+		} else {
+			sub := TocHeading{headingID, text, indent, []TocHeading{}}
+			cur.Items = append(cur.Items, sub)
+		}
+	}
+	return toc
+}
+
 // DocToJSON Convert docs api response to json
-func DocToJSON(doc *docs.Document) []TagContent {
+func DocToJSON(doc *docs.Document) ([]TagContent, []ImageObject, []*TocHeading) {
 	b := doc.Body
+	var toc []*TocHeading
 	ios := doc.InlineObjects
+	lists := doc.Lists
 	var content []TagContent
+	var images []ImageObject
 	for _, s := range b.Content {
-		if s.Paragraph != nil {
-			c := getParagraph(s.Paragraph, ios)
+		if s.TableOfContents != nil {
+			toc = getToc(s.TableOfContents)
+		} else if s.Paragraph != nil {
+			c := getParagraph(s.Paragraph, ios, lists)
 			content = append(content, c...)
 		}
 	}
-	return content
+	for _, c := range content {
+		_, ok := c["img"]
+		if ok {
+			images = append(images, c["img"].Image)
+		}
+	}
+	return content, images, toc
 }
