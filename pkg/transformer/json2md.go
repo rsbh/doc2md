@@ -72,7 +72,7 @@ func JSONToMD(json []TagContent) string {
 			c := getCodeTag(j[key].CodeBlock)
 			content = append(content, c, "\n")
 		} else {
-			fmt.Println(key)
+			// fmt.Println(key)
 		}
 	}
 	return strings.Join(content, "")

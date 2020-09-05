@@ -163,10 +163,10 @@ func getImage(ios map[string]docs.InlineObject, objectID string) ImageObject {
 }
 
 type TocHeading struct {
-	HeadingID string       `json:"headingId"`
-	Text      string       `json:"text"`
-	Indent    float64      `json:"indent"`
-	Items     []TocHeading `json:"items"`
+	HeadingID string        `json:"headingId"`
+	Text      string        `json:"text"`
+	Indent    float64       `json:"indent"`
+	Items     []*TocHeading `json:"items"`
 }
 
 func getToc(data *docs.TableOfContents) []*TocHeading {
@@ -177,12 +177,12 @@ func getToc(data *docs.TableOfContents) []*TocHeading {
 		headingID := c.Paragraph.Elements[0].TextRun.TextStyle.Link.HeadingId
 		indent := c.Paragraph.ParagraphStyle.IndentStart.Magnitude
 		if indent == 0 {
-			t := TocHeading{headingID, text, indent, []TocHeading{}}
+			t := TocHeading{headingID, text, indent, nil}
 			toc = append(toc, &t)
 			cur = &t
 		} else {
-			sub := TocHeading{headingID, text, indent, []TocHeading{}}
-			cur.Items = append(cur.Items, sub)
+			sub := TocHeading{headingID, text, indent, nil}
+			cur.Items = append(cur.Items, &sub)
 		}
 	}
 	return toc
@@ -265,20 +265,56 @@ func getTable(t *docs.Table, supportCodeBlock bool) TagContent {
 	}
 }
 
+func checkInToc(headingID string, toc []*TocHeading) (bool, string) {
+	var isInToc bool
+	var title string
+	if headingID == "" {
+		isInToc = false
+	} else {
+		for _, c := range toc {
+			if c.HeadingID == headingID {
+				isInToc = true
+				title = c.Text
+				break
+			} else {
+				isInToc, title = checkInToc(headingID, c.Items)
+			}
+		}
+	}
+	return isInToc, title
+}
+
+type Page struct {
+	Title    string
+	Contents []TagContent
+	Images   []ImageObject
+}
+
 // DocToJSON Convert docs api response to json
-func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]TagContent, []ImageObject, []*TocHeading) {
+func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]TagContent, []ImageObject, []*TocHeading, []Page) {
 	b := doc.Body
 	var toc []*TocHeading
 	ios := doc.InlineObjects
 	lists := doc.Lists
 	var content []TagContent
 	var images []ImageObject
+	var pages []Page
+	var prevTitle string
+
 	for _, s := range b.Content {
 		if s.TableOfContents != nil {
 			toc = getToc(s.TableOfContents)
 		} else if s.Paragraph != nil {
+			headingID := s.Paragraph.ParagraphStyle.HeadingId
+			isInToc, title := checkInToc(headingID, toc)
 			c := getParagraph(s.Paragraph, ios, lists)
 			content = append(content, c...)
+			if isInToc {
+				p := Page{prevTitle, content, images}
+				pages = append(pages, p)
+				content = nil
+				prevTitle = title
+			}
 		} else if s.Table != nil && len(s.Table.TableRows) > 0 {
 			tc := getTable(s.Table, supportCodeBlock)
 			content = append(content, tc)
@@ -290,5 +326,5 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]TagContent, []Image
 			images = append(images, c["img"].Image)
 		}
 	}
-	return content, images, toc
+	return content, images, toc, pages
 }
