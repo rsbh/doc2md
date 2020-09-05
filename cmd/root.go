@@ -41,11 +41,12 @@ func readConfig(cfgFile string) {
 }
 
 func runRootCmd(cmd *cobra.Command, args []string) {
+	clientID, clientSercet := auth.GetClientCredentials()
 	cfgFile, _ := cmd.Flags().GetString("config")
 	tokenFile, _ := cmd.Flags().GetString("token")
 	tok := auth.GetToken(tokenFile)
 	readConfig(cfgFile)
-	c := auth.GetConfig("", "")
+	c := auth.GetConfig(clientID, clientSercet)
 	client := auth.GetClient(c, tok)
 	s := &gdrive.Service{}
 	s.Init(client)
