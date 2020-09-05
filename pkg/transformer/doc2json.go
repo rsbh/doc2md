@@ -17,9 +17,20 @@ var tags = map[string]string{
 	"SUBTITLE":    "blockquote",
 }
 
-func getText(e *docs.ParagraphElement) string {
+func cleanText(text string, ignoreLineBreak bool) string {
+	s := text
+	if ignoreLineBreak {
+		s = strings.ReplaceAll(s, "\n", "<br/>")
+	} else {
+		s = strings.ReplaceAll(s, "\n", "")
+	}
+	return strings.TrimSpace(s)
+}
+
+func getText(e *docs.ParagraphElement, ignoreLineBreak bool) string {
 	text := e.TextRun.Content
 	isEmptyString := len(text) == 0
+	text = cleanText(text, ignoreLineBreak)
 	if e.TextRun.TextStyle.Italic && !isEmptyString {
 		text = fmt.Sprintf("_%v_", text)
 	}
@@ -41,6 +52,7 @@ func getText(e *docs.ParagraphElement) string {
 type S struct {
 	Text  string
 	Image ImageObject
+	Table
 }
 
 type TagContent map[string]S
@@ -61,12 +73,12 @@ func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObje
 		tr := e.TextRun
 		if e.InlineObjectElement != nil {
 			i := getImage(ios, e.InlineObjectElement.InlineObjectId)
-			x := TagContent{"img": {"", i}}
+			x := TagContent{"img": {"", i, Table{}}}
 			tagContent = append(tagContent, x)
 		} else if tr != nil && tr.Content != "\n" {
 			// headingID := p.ParagraphStyle.HeadingId
-			text := getText(e)
-			x := TagContent{tag: {text, ImageObject{}}}
+			text := getText(e, true)
+			x := TagContent{tag: {text, ImageObject{}, Table{}}}
 			tagContent = append(tagContent, x)
 		}
 	}
@@ -79,7 +91,7 @@ func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObje
 		s := strings.Join(a, " ")
 		s = strings.ReplaceAll(s, " .", ".")
 		s = strings.ReplaceAll(s, " ,", ",")
-		return []TagContent{{tag: {s, ImageObject{}}}}
+		return []TagContent{{tag: {s, ImageObject{}, Table{}}}}
 	} else {
 		return tagContent
 	}
@@ -99,10 +111,10 @@ func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElemen
 	if e.InlineObjectElement != nil {
 		i := getImage(ios, e.InlineObjectElement.InlineObjectId)
 		t := getImageTag(i)
-		s = S{t, i}
+		s = S{t, i, Table{}}
 	} else {
-		t := getText(e)
-		s = S{t, ImageObject{}}
+		t := getText(e, true)
+		s = S{t, ImageObject{}, Table{}}
 	}
 	return s
 }
@@ -122,7 +134,7 @@ func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map
 		bc := strings.Join(bulletContents, " ")
 		bc = strings.ReplaceAll(bc, " .", ".")
 		bc = strings.ReplaceAll(bc, " ,", ",")
-		tc = append(tc, TagContent{listTag: {bc, ImageObject{}}})
+		tc = append(tc, TagContent{listTag: {bc, ImageObject{}, Table{}}})
 	} else {
 		t := p.ParagraphStyle.NamedStyleType
 		tag := tags[t]
@@ -175,6 +187,42 @@ func getToc(data *docs.TableOfContents) []*TocHeading {
 	return toc
 }
 
+func getTextFromParagraph(p *docs.Paragraph, ignoreLineBreak bool) string {
+	fmt.Println(ignoreLineBreak)
+	var sa []string
+	for _, e := range p.Elements {
+		if e.TextRun != nil {
+			a := getText(e, ignoreLineBreak)
+			sa = append(sa, a)
+		} else {
+			sa = append(sa, "")
+		}
+	}
+	s := strings.Join(sa, " ")
+	s = strings.ReplaceAll(s, " .", ".")
+	s = strings.ReplaceAll(s, " ,", ",")
+	return s
+}
+
+type Table struct {
+	Header []string
+	Rows   [][]string
+}
+
+func getTableCellContent(content []*docs.StructuralElement) string {
+	var sa []string
+	if len(content) == 0 {
+		return ""
+	} else {
+		for _, i := range content {
+			a := getTextFromParagraph(i.Paragraph, false)
+			sa = append(sa, a)
+		}
+		s := strings.Join(sa, " ")
+		return s
+	}
+}
+
 // DocToJSON Convert docs api response to json
 func DocToJSON(doc *docs.Document) ([]TagContent, []ImageObject, []*TocHeading) {
 	b := doc.Body
@@ -189,6 +237,26 @@ func DocToJSON(doc *docs.Document) ([]TagContent, []ImageObject, []*TocHeading) 
 		} else if s.Paragraph != nil {
 			c := getParagraph(s.Paragraph, ios, lists)
 			content = append(content, c...)
+		} else if s.Table != nil && len(s.Table.TableRows) > 0 {
+			thead, tbody := s.Table.TableRows[0], s.Table.TableRows[1:]
+			var header []string
+			var rows [][]string
+			for _, t := range thead.TableCells {
+				str := getTableCellContent(t.Content)
+				header = append(header, str)
+			}
+			for _, b := range tbody {
+				var temp []string
+				for _, t := range b.TableCells {
+					str := getTableCellContent(t.Content)
+					temp = append(temp, str)
+				}
+				rows = append(rows, temp)
+			}
+
+			table := Table{header, rows}
+			content = append(content, TagContent{"table": {"", ImageObject{}, table}})
+
 		}
 	}
 	for _, c := range content {

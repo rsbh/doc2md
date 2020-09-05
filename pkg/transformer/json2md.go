@@ -27,6 +27,21 @@ func getList(i ImageObject) string {
 	return fmt.Sprintf("![%v](%v %v)", i.Title, i.Source, i.Title)
 }
 
+func getTable(t Table) string {
+	header := " | "
+	spaces := " | "
+	body := ""
+	for _, h := range t.Header {
+		header = header + h + " | "
+		spaces = spaces + "----" + " | "
+	}
+
+	for _, r := range t.Rows {
+		body = body + " | " + strings.Join(r, " | ") + " | \n"
+	}
+	return strings.Join([]string{header, spaces, body}, "\n")
+}
+
 //JSONToMD convert json to markdown
 func JSONToMD(json []TagContent) string {
 	var content []string
@@ -46,8 +61,11 @@ func JSONToMD(json []TagContent) string {
 		} else if key == "img" {
 			i := getImageTag(j[key].Image)
 			content = append(content, i, "\n")
+		} else if key == "table" {
+			t := getTable(j[key].Table)
+			content = append(content, t, "\n")
 		} else {
-			fmt.Println(j[key].Text)
+			fmt.Println(key)
 		}
 	}
 	return strings.Join(content, "")
