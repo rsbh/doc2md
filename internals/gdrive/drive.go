@@ -1,14 +1,8 @@
 package gdrive
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
-	"path"
-
-	"github.com/spf13/viper"
 )
 
 func generateQuery(folderID string) string {
@@ -42,28 +36,4 @@ func (s *Service) GetFiles(folderID string, bc []string) {
 			}
 		}
 	}
-}
-
-func (s *Service) fetchDoc(docID string, bc []string) {
-	outDir := viper.GetString("OutDir")
-	breadCrumbs := path.Join(bc...)
-	doc, err := s.doc.Documents.Get(docID).Do()
-	if err != nil {
-		log.Fatalf("Unable to retrieve doc: %v", err)
-	}
-
-	outPath := path.Join(outDir, breadCrumbs, doc.Title)
-
-	if _, err := os.Stat(outPath); os.IsNotExist(err) {
-		os.MkdirAll(outPath, 0700) // Create your file
-	}
-
-	outputFile := path.Join(outPath, "index.json")
-
-	prettyJSON, err := json.MarshalIndent(doc, "", "    ")
-	if err != nil {
-		log.Fatal("Failed to generate json", err)
-	}
-
-	_ = ioutil.WriteFile(outputFile, prettyJSON, 0644)
 }
