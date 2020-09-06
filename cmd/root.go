@@ -50,7 +50,7 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 	client := auth.GetClient(c, tok)
 	s := &gdrive.Service{}
 	s.Init(client)
-	s.GetFiles(configuration.FolderID)
+	s.GetFiles(configuration.FolderID, nil)
 }
 
 func init() {
