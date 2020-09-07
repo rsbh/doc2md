@@ -8,9 +8,23 @@ import (
 	"os"
 	"path"
 
-	"github.com/rsbh/doc2md/pkg/transformer"
+	t "github.com/rsbh/doc2md/pkg/transformer"
 	"github.com/spf13/viper"
 )
+
+func replaceImages(p []t.TagContent, imageFolder string) []t.TagContent {
+
+	for i, tc := range p {
+		img := tc["img"].Image
+		if img.Source != "" {
+			name, content := t.ReplaceImage(img.Source)
+			imgPath := path.Join(imageFolder, name)
+			ioutil.WriteFile(imgPath, content, 0644)
+			p[i] = t.TagContent{"img": {"", t.ImageObject{imgPath, img.Title, img.Description}, t.Table{}, t.CodeBlock{}}}
+		}
+	}
+	return p
+}
 
 func (s *Service) fetchDoc(docID string, bc []string) {
 	outDir := viper.GetString("OutDir")
@@ -21,15 +35,17 @@ func (s *Service) fetchDoc(docID string, bc []string) {
 	}
 
 	outPath := path.Join(outDir, breadCrumbs, doc.Title)
+	imageFolder := path.Join(outPath, "images")
 
-	if _, err := os.Stat(outPath); os.IsNotExist(err) {
-		os.MkdirAll(outPath, 0700) // Create your file
+	if _, err := os.Stat(imageFolder); os.IsNotExist(err) {
+		os.MkdirAll(imageFolder, 0700) // Create your file
 	}
 
-	_, _, toc, pages := transformer.DocToJSON(doc, true)
+	pages, toc, _ := t.DocToJSON(doc, true)
 
 	for _, p := range pages {
-		x := transformer.JSONToMD(p.Contents)
+		updatedContent := replaceImages(p.Contents, imageFolder)
+		x := t.JSONToMD(updatedContent)
 		md := []byte(x)
 		fileName := fmt.Sprintf("%v.md", p.Title)
 

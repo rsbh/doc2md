@@ -291,7 +291,7 @@ type Page struct {
 }
 
 // DocToJSON Convert docs api response to json
-func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]TagContent, []ImageObject, []*TocHeading, []Page) {
+func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]Page, []*TocHeading, []ImageObject) {
 	b := doc.Body
 	var toc []*TocHeading
 	ios := doc.InlineObjects
@@ -330,5 +330,5 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]TagContent, []Image
 		page := Page{"index", content, images}
 		pages = append(pages, page)
 	}
-	return content, images, toc, pages
+	return pages, toc, images
 }

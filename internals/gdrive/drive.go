@@ -25,7 +25,6 @@ func (s *Service) GetFiles(folderID string, bc []string) {
 		fmt.Println("No Drives found.")
 	} else {
 		for _, i := range r.Files {
-			fmt.Printf("%s (%s) (%s)\n", i.Name, i.Id, i.MimeType)
 			if i.MimeType == mimeTypeDocument {
 				s.fetchDoc(i.Id, bc)
 			} else if i.MimeType == mimeTypeFolder {
