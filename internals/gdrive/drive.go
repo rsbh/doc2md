@@ -30,6 +30,8 @@ func (s *Service) GetFiles(folderID string, bc []string) {
 			} else if i.MimeType == mimeTypeFolder {
 				newBc := append(bc, i.Name)
 				s.GetFiles(i.Id, newBc)
+			} else if i.MimeType == mimeTypeSheet {
+				s.fetchSheet(i.Id, i.Name, bc)
 			} else {
 				fmt.Printf("%s (%s) (%s)\n", i.Name, i.Id, i.MimeType)
 			}

@@ -230,10 +230,11 @@ type CodeBlock struct {
 
 func getCodeBlock(cell *docs.TableCell) CodeBlock {
 	var codeArr []string
-
 	for _, c := range cell.Content {
-		for _, e := range c.Paragraph.Elements {
-			codeArr = append(codeArr, e.TextRun.Content)
+		if c != nil && c.Paragraph != nil {
+			for _, e := range c.Paragraph.Elements {
+				codeArr = append(codeArr, e.TextRun.Content)
+			}
 		}
 	}
 	code := strings.Join(codeArr, "")
