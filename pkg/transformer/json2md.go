@@ -20,7 +20,7 @@ func getHeader(text string, repeat int) string {
 }
 
 func getImageTag(i ImageObject) string {
-	return fmt.Sprintf("![%v](%v %v)", i.Title, i.Source, i.Title)
+	return fmt.Sprintf("![%v](%v \"%v\")", i.Title, i.Source, i.Title)
 }
 
 func getList(i ImageObject) string {
