@@ -27,7 +27,8 @@ func replaceImages(p []t.TagContent, imageFolder string) []t.TagContent {
 	return p
 }
 
-func (s *Service) fetchDoc(docID string, bc []string) {
+// FetchDoc fetch google doc from drive
+func (s *Service) FetchDoc(docID string, bc []string) {
 	outDir := viper.GetString("OutDir")
 	breadCrumbs := path.Join(bc...)
 	doc, err := s.doc.Documents.Get(docID).Do()

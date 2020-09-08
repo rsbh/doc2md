@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/rsbh/doc2md/internals/auth"
 	"github.com/rsbh/doc2md/internals/config"
@@ -50,7 +51,18 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 	client := auth.GetClient(c, tok)
 	s := &gdrive.Service{}
 	s.Init(client)
-	s.GetFiles(configuration.FolderID, nil)
+	start := time.Now()
+
+	if len(configuration.DocIDs) > 0 {
+		for _, ID := range configuration.DocIDs {
+			s.FetchDoc(ID, nil)
+		}
+	}
+
+	if configuration.FolderID != "" {
+		s.GetFiles(configuration.FolderID, nil)
+	}
+	fmt.Println(time.Since(start))
 }
 
 func init() {

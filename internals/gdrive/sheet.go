@@ -18,7 +18,10 @@ func sheetToJSON(values [][]interface{}) []map[string]string {
 		var rowData = make(map[string]string)
 		for i, k := range keys {
 			key := fmt.Sprintf("%v", k)
-			value := fmt.Sprintf("%v", row[i])
+			value := ""
+			if len(row) > 0 && len(row) > i {
+				value = fmt.Sprintf("%v", row[i])
+			}
 			rowData[key] = value
 		}
 		data = append(data, rowData)

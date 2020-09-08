@@ -300,22 +300,23 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]Page, []*TocHeading
 	var content []TagContent
 	var images []ImageObject
 	var pages []Page
-	// var prevTitle string
+	var prevTitle string
 	for _, s := range b.Content {
 		if s.TableOfContents != nil {
 			toc = getToc(s.TableOfContents)
 		} else if s.Paragraph != nil {
-			// headingID := s.Paragraph.ParagraphStyle.HeadingId
-			// // isInToc, title := checkInToc(headingID, toc)
+			headingID := s.Paragraph.ParagraphStyle.HeadingId
+			headingTag := s.Paragraph.ParagraphStyle.NamedStyleType
+			isInToc, title := checkInToc(headingID, toc)
+			if isInToc && headingTag == "HEADING_2" {
+				page := Page{prevTitle, content, images}
+				pages = append(pages, page)
+				content = []TagContent{}
+				images = []ImageObject{}
+				prevTitle = title
+			}
 			c := getParagraph(s.Paragraph, ios, lists)
 			content = append(content, c...)
-			// if isInToc {
-			// 	page.Title = title
-			// 	p := Page{prevTitle, content, images}
-			// 	pages = append(pages, p)
-			// 	content = nil
-			// 	prevTitle = title
-			// }
 		} else if s.Table != nil && len(s.Table.TableRows) > 0 {
 			tc := getTable(s.Table, supportCodeBlock)
 			content = append(content, tc)

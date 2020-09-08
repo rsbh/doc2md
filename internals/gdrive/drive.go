@@ -26,7 +26,7 @@ func (s *Service) GetFiles(folderID string, bc []string) {
 	} else {
 		for _, i := range r.Files {
 			if i.MimeType == mimeTypeDocument {
-				s.fetchDoc(i.Id, bc)
+				s.FetchDoc(i.Id, bc)
 			} else if i.MimeType == mimeTypeFolder {
 				newBc := append(bc, i.Name)
 				s.GetFiles(i.Id, newBc)
