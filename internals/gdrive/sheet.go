@@ -60,6 +60,6 @@ func saveSheet(data []map[string]string, folder string, fileName string, bc []st
 	if err != nil {
 		log.Fatalf("Unable to parse sheet data: %v", err)
 	}
-	c := FetchedDoc{outPath, fileName, nil, json}
+	c := FetchedDoc{outPath, fileName, json}
 	c.SaveToFile()
 }

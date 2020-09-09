@@ -55,7 +55,7 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 
 	if len(configuration.DocIDs) > 0 {
 		for _, ID := range configuration.DocIDs {
-			s.FetchDoc(ID, nil)
+			s.FetchDoc(ID, nil, gdrive.FrontMatter{})
 		}
 	}
 

@@ -17,7 +17,7 @@ func generateQuery(folderID string) string {
 // GetFiles return google drive files
 func (s *Service) GetFiles(folderID string, bc []string) {
 	query := generateQuery(folderID)
-	r, err := s.drive.Files.List().SupportsTeamDrives(true).IncludeTeamDriveItems(true).Q(query).Do()
+	r, err := s.drive.Files.List().SupportsTeamDrives(true).IncludeTeamDriveItems(true).Q(query).Fields("files(id, name, mimeType, description, createdTime, modifiedTime, lastModifyingUser)").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve files: %v", err)
 	}
@@ -26,7 +26,8 @@ func (s *Service) GetFiles(folderID string, bc []string) {
 	} else {
 		for _, i := range r.Files {
 			if i.MimeType == mimeTypeDocument {
-				s.FetchDoc(i.Id, bc)
+				meta := FrontMatter{"", i.Description, i.LastModifyingUser.DisplayName, i.ModifiedTime, i.CreatedTime}
+				s.FetchDoc(i.Id, bc, meta)
 			} else if i.MimeType == mimeTypeFolder {
 				newBc := append(bc, i.Name)
 				s.GetFiles(i.Id, newBc)

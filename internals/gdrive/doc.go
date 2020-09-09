@@ -10,6 +10,7 @@ import (
 
 	t "github.com/rsbh/doc2md/pkg/transformer"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 func replaceImages(p []t.TagContent, imageFolder string) []t.TagContent {
@@ -30,15 +31,23 @@ func replaceImages(p []t.TagContent, imageFolder string) []t.TagContent {
 type FetchedDoc struct {
 	OutPath  string
 	FileName string
-	Contents []t.TagContent
 	Data     []byte
 }
 
+type FrontMatter struct {
+	Title       string `yaml:"title"`
+	Description string `yaml:"Description"`
+	ModifiedBy  string `yaml:"modifiedBy"`
+	ModifiedAt  string `yaml:"modifiedAt"`
+	CreatedAt   string `yaml:"createdAt"`
+}
+
 // FetchDoc fetch google doc from drive
-func (s *Service) FetchDoc(docID string, bc []string) {
+func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter) {
 	outDir := viper.GetString("OutDir")
 	breakDoc := viper.GetBool("BreakDoc")
 	supportCodeBlock := viper.GetBool("SupportCodeBlock")
+
 	breadCrumbs := path.Join(bc...)
 	doc, err := s.doc.Documents.Get(docID).Do()
 	if err != nil {
@@ -56,29 +65,33 @@ func (s *Service) FetchDoc(docID string, bc []string) {
 
 	for _, p := range pages {
 		updatedContent := replaceImages(p.Contents, imageFolder)
+		meta.Title = p.Title
+		frontMatter, err := yaml.Marshal(&meta)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
 		fileName := fmt.Sprintf("%v.md", p.Title)
-		d := FetchedDoc{outPath, fileName, updatedContent, nil}
+
+		md := t.JSONToMD(updatedContent)
+		data := fmt.Sprintf("---\n%v\n---\n\n%v", string(frontMatter), md)
+
+		content := []byte(data)
+		d := FetchedDoc{outPath, fileName, content}
 		d.SaveToFile()
 	}
 	prettyToc, err := json.MarshalIndent(toc, "", "    ")
 	if err != nil {
 		log.Fatal("Failed to generate json", err)
 	}
-	t := FetchedDoc{outPath, "toc.json", nil, prettyToc}
+	t := FetchedDoc{outPath, "toc.json", prettyToc}
 	t.SaveToFile()
 }
 
 func (d FetchedDoc) SaveToFile() {
-	var content []byte
 	if _, err := os.Stat(d.OutPath); os.IsNotExist(err) {
 		os.MkdirAll(d.OutPath, 0700) // Create your file
 	}
-	if d.Contents != nil {
-		json := t.JSONToMD(d.Contents)
-		content = []byte(json)
-	} else {
-		content = d.Data
-	}
+
 	outputFile := path.Join(d.OutPath, d.FileName)
-	ioutil.WriteFile(outputFile, content, 0644)
+	ioutil.WriteFile(outputFile, d.Data, 0644)
 }
