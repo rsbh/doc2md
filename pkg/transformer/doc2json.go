@@ -288,17 +288,15 @@ func checkInToc(headingID string, toc []*TocHeading) (bool, string) {
 type Page struct {
 	Title    string
 	Contents []TagContent
-	Images   []ImageObject
 }
 
 // DocToJSON Convert docs api response to json
-func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]Page, []*TocHeading, []ImageObject) {
+func DocToJSON(doc *docs.Document, supportCodeBlock bool, breakPages bool) ([]Page, []*TocHeading) {
 	b := doc.Body
 	var toc []*TocHeading
 	ios := doc.InlineObjects
 	lists := doc.Lists
 	var content []TagContent
-	var images []ImageObject
 	var pages []Page
 	var prevTitle string
 	for _, s := range b.Content {
@@ -308,11 +306,12 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]Page, []*TocHeading
 			headingID := s.Paragraph.ParagraphStyle.HeadingId
 			headingTag := s.Paragraph.ParagraphStyle.NamedStyleType
 			isInToc, title := checkInToc(headingID, toc)
-			if isInToc && headingTag == "HEADING_2" {
-				page := Page{prevTitle, content, images}
-				pages = append(pages, page)
+			if isInToc && breakPages && headingTag == "HEADING_2" {
+				if prevTitle != "" {
+					page := Page{prevTitle, content}
+					pages = append(pages, page)
+				}
 				content = []TagContent{}
-				images = []ImageObject{}
 				prevTitle = title
 			}
 			c := getParagraph(s.Paragraph, ios, lists)
@@ -322,15 +321,9 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool) ([]Page, []*TocHeading
 			content = append(content, tc)
 		}
 	}
-	for _, c := range content {
-		_, ok := c["img"]
-		if ok {
-			images = append(images, c["img"].Image)
-		}
-	}
 	if len(pages) == 0 {
-		page := Page{"index", content, images}
+		page := Page{"index", content}
 		pages = append(pages, page)
 	}
-	return pages, toc, images
+	return pages, toc
 }

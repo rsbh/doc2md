@@ -37,6 +37,8 @@ type FetchedDoc struct {
 // FetchDoc fetch google doc from drive
 func (s *Service) FetchDoc(docID string, bc []string) {
 	outDir := viper.GetString("OutDir")
+	breakDoc := viper.GetBool("BreakDoc")
+	supportCodeBlock := viper.GetBool("SupportCodeBlock")
 	breadCrumbs := path.Join(bc...)
 	doc, err := s.doc.Documents.Get(docID).Do()
 	if err != nil {
@@ -50,7 +52,7 @@ func (s *Service) FetchDoc(docID string, bc []string) {
 		os.MkdirAll(imageFolder, 0700) // Create your file
 	}
 
-	pages, toc, _ := t.DocToJSON(doc, true)
+	pages, toc := t.DocToJSON(doc, supportCodeBlock, breakDoc)
 
 	for _, p := range pages {
 		updatedContent := replaceImages(p.Contents, imageFolder)
