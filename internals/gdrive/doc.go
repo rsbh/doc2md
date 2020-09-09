@@ -27,6 +27,13 @@ func replaceImages(p []t.TagContent, imageFolder string) []t.TagContent {
 	return p
 }
 
+type FetchedDoc struct {
+	OutPath  string
+	FileName string
+	Contents []t.TagContent
+	Data     []byte
+}
+
 // FetchDoc fetch google doc from drive
 func (s *Service) FetchDoc(docID string, bc []string) {
 	outDir := viper.GetString("OutDir")
@@ -47,22 +54,29 @@ func (s *Service) FetchDoc(docID string, bc []string) {
 
 	for _, p := range pages {
 		updatedContent := replaceImages(p.Contents, imageFolder)
-		x := t.JSONToMD(updatedContent)
-		md := []byte(x)
 		fileName := fmt.Sprintf("%v.md", p.Title)
-
-		outputFile := path.Join(outPath, fileName)
-
-		_ = ioutil.WriteFile(outputFile, md, 0644)
-
+		d := FetchedDoc{outPath, fileName, updatedContent, nil}
+		d.SaveToFile()
 	}
 	prettyToc, err := json.MarshalIndent(toc, "", "    ")
 	if err != nil {
 		log.Fatal("Failed to generate json", err)
 	}
+	t := FetchedDoc{outPath, "toc.json", nil, prettyToc}
+	t.SaveToFile()
+}
 
-	tocFilePath := path.Join(outPath, "toc.json")
-
-	_ = ioutil.WriteFile(tocFilePath, prettyToc, 0644)
-
+func (d FetchedDoc) SaveToFile() {
+	var content []byte
+	if _, err := os.Stat(d.OutPath); os.IsNotExist(err) {
+		os.MkdirAll(d.OutPath, 0700) // Create your file
+	}
+	if d.Contents != nil {
+		json := t.JSONToMD(d.Contents)
+		content = []byte(json)
+	} else {
+		content = d.Data
+	}
+	outputFile := path.Join(d.OutPath, d.FileName)
+	ioutil.WriteFile(outputFile, content, 0644)
 }

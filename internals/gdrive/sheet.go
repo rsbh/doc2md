@@ -3,9 +3,7 @@ package gdrive
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 	"path"
 
 	"github.com/spf13/viper"
@@ -62,9 +60,6 @@ func saveSheet(data []map[string]string, folder string, fileName string, bc []st
 	if err != nil {
 		log.Fatalf("Unable to parse sheet data: %v", err)
 	}
-	if _, err := os.Stat(outPath); os.IsNotExist(err) {
-		os.MkdirAll(outPath, 0700) // Create your file
-	}
-	outputFile := path.Join(outPath, fileName)
-	ioutil.WriteFile(outputFile, json, 0644)
+	c := FetchedDoc{outPath, fileName, nil, json}
+	c.SaveToFile()
 }
