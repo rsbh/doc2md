@@ -68,6 +68,7 @@ type S struct {
 	Image ImageObject
 	Table
 	CodeBlock
+	List []string
 }
 
 type TagContent map[string]S
@@ -84,18 +85,17 @@ func all(vs []TagContent, f func(TagContent) bool) bool {
 func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObject) []TagContent {
 	var tagContent []TagContent
 	isHeader, _ := regexp.MatchString("^h[1-6]$", tag)
-	fmt.Println(isHeader)
 	for _, e := range p.Elements {
 
 		tr := e.TextRun
 		if e.InlineObjectElement != nil {
 			i := getImage(ios, e.InlineObjectElement.InlineObjectId)
-			x := TagContent{"img": {"", i, Table{}, CodeBlock{}}}
+			x := TagContent{"img": {"", i, Table{}, CodeBlock{}, []string{}}}
 			tagContent = append(tagContent, x)
 		} else if tr != nil && tr.Content != "\n" {
 			// headingID := p.ParagraphStyle.HeadingId
 			text := getText(e, true, isHeader)
-			x := TagContent{tag: {text, ImageObject{}, Table{}, CodeBlock{}}}
+			x := TagContent{tag: {text, ImageObject{}, Table{}, CodeBlock{}, []string{}}}
 			tagContent = append(tagContent, x)
 		}
 	}
@@ -108,7 +108,7 @@ func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObje
 		s := strings.Join(a, " ")
 		s = strings.ReplaceAll(s, " .", ".")
 		s = strings.ReplaceAll(s, " ,", ",")
-		return []TagContent{{tag: {s, ImageObject{}, Table{}, CodeBlock{}}}}
+		return []TagContent{{tag: {s, ImageObject{}, Table{}, CodeBlock{}, []string{}}}}
 	} else {
 		return tagContent
 	}
@@ -128,18 +128,33 @@ func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElemen
 	if e.InlineObjectElement != nil {
 		i := getImage(ios, e.InlineObjectElement.InlineObjectId)
 		t := getImageTag(i)
-		s = S{t, i, Table{}, CodeBlock{}}
+		s = S{t, i, Table{}, CodeBlock{}, []string{}}
 	} else {
 		t := getText(e, true, false)
-		s = S{t, ImageObject{}, Table{}, CodeBlock{}}
+		s = S{t, ImageObject{}, Table{}, CodeBlock{}, []string{}}
 	}
 	return s
 }
 
-func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map[string]docs.List) []TagContent {
+func getNestedListIndent(level int, listTag string) string {
+	indentType := "-"
+	if listTag == "ol" {
+		indentType = "1."
+	}
+	indent := strings.Repeat("  ", level)
+	return fmt.Sprintf("%v%v ", indent, indentType)
+}
+
+func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map[string]docs.List, prev *docs.Paragraph, contents *[]TagContent) []TagContent {
 	var tc []TagContent
 	if p.Bullet != nil {
 		listID := p.Bullet.ListId
+		var prevID string
+
+		if prev.Bullet != nil {
+			prevID = prev.Bullet.ListId
+		}
+
 		listTag := getListType(lists, listID)
 		var bulletContents []string
 		for _, e := range p.Elements {
@@ -151,7 +166,24 @@ func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map
 		bc := strings.Join(bulletContents, " ")
 		bc = strings.ReplaceAll(bc, " .", ".")
 		bc = strings.ReplaceAll(bc, " ,", ",")
-		tc = append(tc, TagContent{listTag: {bc, ImageObject{}, Table{}, CodeBlock{}}})
+
+		if listID == prevID {
+			c := *contents
+			last := c[len(c)-1][listTag].List
+			nestingLevel := p.Bullet.NestingLevel
+			lastIndex := len(last) - 1
+
+			if nestingLevel != 0 && lastIndex > 0 {
+				indent := getNestedListIndent(lastIndex, listTag)
+				last[lastIndex] += fmt.Sprintf("\n%v %v", indent, bc)
+			} else {
+				last = append(last, bc)
+				c[len(c)-1] = TagContent{listTag: {"", ImageObject{}, Table{}, CodeBlock{}, last}}
+				*contents = c
+			}
+		} else {
+			tc = append(tc, TagContent{listTag: {"", ImageObject{}, Table{}, CodeBlock{}, []string{bc}}})
+		}
 	} else {
 		t := p.ParagraphStyle.NamedStyleType
 		tag := tags[t]
@@ -261,7 +293,7 @@ func getTable(t *docs.Table, supportCodeBlock bool) TagContent {
 	if supportCodeBlock && t.Rows == 1 && t.Columns == 1 {
 		cell := t.TableRows[0].TableCells[0]
 		cb := getCodeBlock(cell)
-		return TagContent{"code": {"", ImageObject{}, Table{}, cb}}
+		return TagContent{"code": {"", ImageObject{}, Table{}, cb, []string{}}}
 	} else {
 		thead, tbody := t.TableRows[0], t.TableRows[1:]
 		var header []string
@@ -278,7 +310,7 @@ func getTable(t *docs.Table, supportCodeBlock bool) TagContent {
 			}
 			rows = append(rows, temp)
 		}
-		return TagContent{"table": {"", ImageObject{}, Table{header, rows}, CodeBlock{}}}
+		return TagContent{"table": {"", ImageObject{}, Table{header, rows}, CodeBlock{}, []string{}}}
 	}
 }
 
@@ -315,7 +347,7 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool, breakPages bool) ([]Pa
 	var content []TagContent
 	var pages []Page
 	var prevTitle string
-	for _, s := range b.Content {
+	for i, s := range b.Content {
 		if s.TableOfContents != nil {
 			toc = getToc(s.TableOfContents)
 		} else if s.Paragraph != nil {
@@ -330,7 +362,9 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool, breakPages bool) ([]Pa
 				content = []TagContent{}
 				prevTitle = title
 			}
-			c := getParagraph(s.Paragraph, ios, lists)
+
+			prev := b.Content[i-1].Paragraph
+			c := getParagraph(s.Paragraph, ios, lists, prev, &content)
 			content = append(content, c...)
 		} else if s.Table != nil && len(s.Table.TableRows) > 0 {
 			tc := getTable(s.Table, supportCodeBlock)

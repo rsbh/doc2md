@@ -22,7 +22,7 @@ func replaceImages(p []t.TagContent, imageFolder string) []t.TagContent {
 			imgPath := path.Join(imageFolder, name)
 			ioutil.WriteFile(imgPath, content, 0644)
 			imgLink := path.Join("images", name)
-			p[i] = t.TagContent{"img": {"", t.ImageObject{imgLink, img.Title, img.Description}, t.Table{}, t.CodeBlock{}}}
+			p[i] = t.TagContent{"img": {"", t.ImageObject{imgLink, img.Title, img.Description}, t.Table{}, t.CodeBlock{}, []string{}}}
 		}
 	}
 	return p

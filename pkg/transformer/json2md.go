@@ -23,10 +23,6 @@ func getImageTag(i ImageObject) string {
 	return fmt.Sprintf("![%v](%v \"%v\")", i.Title, i.Source, i.Title)
 }
 
-func getList(i ImageObject) string {
-	return fmt.Sprintf("![%v](%v %v)", i.Title, i.Source, i.Title)
-}
-
 func getTableTag(t Table) string {
 	header := " | "
 	spaces := " | "
@@ -44,6 +40,22 @@ func getTableTag(t Table) string {
 
 func getCodeTag(c CodeBlock) string {
 	return "```" + c.Lang + "\n" + c.Content + "```"
+}
+
+func convertOrderedList(list []string) string {
+	var str string
+	for i, li := range list {
+		str = str + fmt.Sprintf("\n %v. %v", i+1, li)
+	}
+	return str
+}
+
+func convertUnorderedList(list []string) string {
+	var str string
+	for _, li := range list {
+		str = str + fmt.Sprintf("\n -  %v", li)
+	}
+	return str
 }
 
 //JSONToMD convert json to markdown
@@ -71,8 +83,14 @@ func JSONToMD(json []TagContent) string {
 		} else if key == "code" {
 			c := getCodeTag(j[key].CodeBlock)
 			content = append(content, c, "\n")
+		} else if key == "ol" {
+			list := convertOrderedList(j[key].List)
+			content = append(content, list, "\n")
+		} else if key == "ul" {
+			list := convertUnorderedList(j[key].List)
+			content = append(content, list, "\n")
 		} else {
-			// fmt.Println(key)
+
 		}
 	}
 	return strings.Join(content, "")
