@@ -2,8 +2,10 @@ package transformer
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
+	"github.com/dlclark/regexp2"
 	"google.golang.org/api/docs/v1"
 )
 
@@ -27,15 +29,27 @@ func cleanText(text string, ignoreLineBreak bool) string {
 	return strings.TrimSpace(s)
 }
 
-func getText(e *docs.ParagraphElement, ignoreLineBreak bool) string {
+func getText(e *docs.ParagraphElement, ignoreLineBreak bool, isHeader bool) string {
 	text := e.TextRun.Content
+
+	re1 := regexp2.MustCompile(`<(?![<br/>])`, 0)
+	if isMatch, _ := re1.MatchString(text); isMatch {
+		text, _ = re1.Replace(text, "&lt;", -1, -1)
+	}
+
+	re2 := regexp2.MustCompile(`/>`, 0)
+	if isMatch, _ := re2.MatchString(text); isMatch {
+		text, _ = re2.Replace(text, "&gt;", -1, -1)
+	}
+
 	isEmptyString := len(text) == 0
 	text = cleanText(text, ignoreLineBreak)
+
 	if e.TextRun.TextStyle.Italic && !isEmptyString {
 		text = fmt.Sprintf("_%v_", text)
 	}
 
-	if e.TextRun.TextStyle.Bold && !isEmptyString {
+	if e.TextRun.TextStyle.Bold && !isHeader && !isEmptyString {
 		text = fmt.Sprintf("**%v**", text)
 	}
 
@@ -69,6 +83,8 @@ func all(vs []TagContent, f func(TagContent) bool) bool {
 
 func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObject) []TagContent {
 	var tagContent []TagContent
+	isHeader, _ := regexp.MatchString("^h[1-6]$", tag)
+	fmt.Println(isHeader)
 	for _, e := range p.Elements {
 
 		tr := e.TextRun
@@ -78,7 +94,7 @@ func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObje
 			tagContent = append(tagContent, x)
 		} else if tr != nil && tr.Content != "\n" {
 			// headingID := p.ParagraphStyle.HeadingId
-			text := getText(e, true)
+			text := getText(e, true, isHeader)
 			x := TagContent{tag: {text, ImageObject{}, Table{}, CodeBlock{}}}
 			tagContent = append(tagContent, x)
 		}
@@ -114,7 +130,7 @@ func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElemen
 		t := getImageTag(i)
 		s = S{t, i, Table{}, CodeBlock{}}
 	} else {
-		t := getText(e, true)
+		t := getText(e, true, false)
 		s = S{t, ImageObject{}, Table{}, CodeBlock{}}
 	}
 	return s
@@ -192,7 +208,7 @@ func getTextFromParagraph(p *docs.Paragraph, ignoreLineBreak bool) string {
 	var sa []string
 	for _, e := range p.Elements {
 		if e.TextRun != nil {
-			a := getText(e, ignoreLineBreak)
+			a := getText(e, ignoreLineBreak, false)
 			sa = append(sa, a)
 		} else {
 			sa = append(sa, "")

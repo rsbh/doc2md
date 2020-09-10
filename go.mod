@@ -3,6 +3,7 @@ module github.com/rsbh/doc2md
 go 1.13
 
 require (
+	github.com/dlclark/regexp2 v1.2.1
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/jdcloud-api/jdcloud-sdk-go v1.41.0 // indirect
 	github.com/spf13/cobra v1.0.0

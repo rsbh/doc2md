@@ -8,7 +8,7 @@ import (
 
 	"github.com/rsbh/doc2md/internals/auth"
 	"github.com/rsbh/doc2md/internals/config"
-	"github.com/rsbh/doc2md/internals/gdrive"
+	"github.com/rsbh/doc2md/pkg/gdrive"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
