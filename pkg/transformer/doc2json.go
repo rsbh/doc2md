@@ -329,12 +329,12 @@ func checkInToc(headingID string, toc []*TocHeading) (bool, string) {
 		isInToc = false
 	} else {
 		for _, c := range toc {
-			if c.HeadingID == headingID {
-				isInToc = true
-				title = c.Text
-				break
-			} else {
-				isInToc, title = checkInToc(headingID, c.Items)
+			for _, j := range c.Items {
+				if j.HeadingID == headingID {
+					isInToc = true
+					title = j.Text
+					break
+				}
 			}
 		}
 	}
@@ -359,16 +359,22 @@ func DocToJSON(doc *docs.Document, imageFolder string, supportCodeBlock bool, br
 		if s.TableOfContents != nil {
 			toc = getToc(s.TableOfContents)
 		} else if s.Paragraph != nil {
-			headingID := s.Paragraph.ParagraphStyle.HeadingId
-			headingTag := s.Paragraph.ParagraphStyle.NamedStyleType
-			isInToc, title := checkInToc(headingID, toc)
-			if isInToc && breakPages && headingTag == "HEADING_2" {
-				if prevTitle != "" {
-					page := Page{prevTitle, content}
-					pages = append(pages, page)
+			if breakPages {
+				headingID := s.Paragraph.ParagraphStyle.HeadingId
+				headingTag := s.Paragraph.ParagraphStyle.NamedStyleType
+
+				if headingTag == "HEADING_1" {
+					continue
 				}
-				content = []TagContent{}
-				prevTitle = title
+				isInToc, title := checkInToc(headingID, toc)
+				if isInToc && headingTag == "HEADING_2" {
+					if prevTitle != "" {
+						page := Page{prevTitle, content}
+						pages = append(pages, page)
+					}
+					content = []TagContent{}
+					prevTitle = title
+				}
 			}
 
 			prev := b.Content[i-1].Paragraph
