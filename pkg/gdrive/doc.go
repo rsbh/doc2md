@@ -13,21 +13,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func replaceImages(p []t.TagContent, imageFolder string) []t.TagContent {
-
-	for i, tc := range p {
-		img := tc["img"].Image
-		if img.Source != "" {
-			name, content := t.ReplaceImage(img.Source)
-			imgPath := path.Join(imageFolder, name)
-			ioutil.WriteFile(imgPath, content, 0644)
-			imgLink := path.Join("images", name)
-			p[i] = t.TagContent{"img": {"", t.ImageObject{imgLink, img.Title, img.Description}, t.Table{}, t.CodeBlock{}, []string{}}}
-		}
-	}
-	return p
-}
-
 type FetchedDoc struct {
 	OutPath  string
 	FileName string
@@ -61,10 +46,9 @@ func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter) {
 		os.MkdirAll(imageFolder, 0700) // Create your file
 	}
 
-	pages, toc := t.DocToJSON(doc, supportCodeBlock, breakDoc)
+	pages, toc := t.DocToJSON(doc, imageFolder, supportCodeBlock, breakDoc)
 
 	for _, p := range pages {
-		updatedContent := replaceImages(p.Contents, imageFolder)
 		meta.Title = p.Title
 		frontMatter, err := yaml.Marshal(&meta)
 		if err != nil {
@@ -72,7 +56,7 @@ func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter) {
 		}
 		fileName := fmt.Sprintf("%v.md", p.Title)
 
-		md := t.JSONToMD(updatedContent)
+		md := t.JSONToMD(p.Contents)
 		data := fmt.Sprintf("---\n%v\n---\n\n%v", string(frontMatter), md)
 
 		content := []byte(data)

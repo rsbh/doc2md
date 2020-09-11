@@ -2,6 +2,8 @@ package transformer
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 	"regexp"
 	"strings"
 
@@ -82,14 +84,14 @@ func all(vs []TagContent, f func(TagContent) bool) bool {
 	return true
 }
 
-func getTagContent(p *docs.Paragraph, tag string, ios map[string]docs.InlineObject) []TagContent {
+func getTagContent(p *docs.Paragraph, tag string, imageFolder string, ios map[string]docs.InlineObject) []TagContent {
 	var tagContent []TagContent
 	isHeader, _ := regexp.MatchString("^h[1-6]$", tag)
 	for _, e := range p.Elements {
 
 		tr := e.TextRun
 		if e.InlineObjectElement != nil {
-			i := getImage(ios, e.InlineObjectElement.InlineObjectId)
+			i := getImage(ios, imageFolder, e.InlineObjectElement.InlineObjectId)
 			x := TagContent{"img": {"", i, Table{}, CodeBlock{}, []string{}}}
 			tagContent = append(tagContent, x)
 		} else if tr != nil && tr.Content != "\n" {
@@ -123,10 +125,10 @@ func getListType(lists map[string]docs.List, listID string) string {
 	return t
 }
 
-func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElement) S {
+func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElement, imageFolder string) S {
 	var s S
 	if e.InlineObjectElement != nil {
-		i := getImage(ios, e.InlineObjectElement.InlineObjectId)
+		i := getImage(ios, imageFolder, e.InlineObjectElement.InlineObjectId)
 		t := getImageTag(i)
 		s = S{t, i, Table{}, CodeBlock{}, []string{}}
 	} else {
@@ -145,7 +147,7 @@ func getNestedListIndent(level int, listTag string) string {
 	return fmt.Sprintf("%v%v ", indent, indentType)
 }
 
-func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map[string]docs.List, prev *docs.Paragraph, contents *[]TagContent) []TagContent {
+func getParagraph(p *docs.Paragraph, imageFolder string, ios map[string]docs.InlineObject, lists map[string]docs.List, prev *docs.Paragraph, contents *[]TagContent) []TagContent {
 	var tc []TagContent
 	if p.Bullet != nil {
 		listID := p.Bullet.ListId
@@ -158,7 +160,7 @@ func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map
 		listTag := getListType(lists, listID)
 		var bulletContents []string
 		for _, e := range p.Elements {
-			s := getBulletContents(ios, e)
+			s := getBulletContents(ios, e, imageFolder)
 			if s.Text != "" {
 				bulletContents = append(bulletContents, s.Text)
 			}
@@ -188,7 +190,7 @@ func getParagraph(p *docs.Paragraph, ios map[string]docs.InlineObject, lists map
 		t := p.ParagraphStyle.NamedStyleType
 		tag := tags[t]
 		if tag != "" {
-			tc = getTagContent(p, tag, ios)
+			tc = getTagContent(p, tag, imageFolder, ios)
 		}
 	}
 	return tc
@@ -200,12 +202,18 @@ type ImageObject struct {
 	Description string
 }
 
-func getImage(ios map[string]docs.InlineObject, objectID string) ImageObject {
+func getImage(ios map[string]docs.InlineObject, imageFolder string, objectID string) ImageObject {
 	var image ImageObject
 	eo := ios[objectID].InlineObjectProperties.EmbeddedObject
 
 	if eo != nil && eo.ImageProperties != nil {
-		image = ImageObject{eo.ImageProperties.ContentUri, eo.Title, eo.Description}
+		src := eo.ImageProperties.ContentUri
+		name, content := ReplaceImage(src)
+		imgPath := path.Join(imageFolder, name)
+		ioutil.WriteFile(imgPath, content, 0644)
+		imgLink := path.Join("images", name)
+
+		image = ImageObject{imgLink, eo.Title, eo.Description}
 	}
 	return image
 }
@@ -339,7 +347,7 @@ type Page struct {
 }
 
 // DocToJSON Convert docs api response to json
-func DocToJSON(doc *docs.Document, supportCodeBlock bool, breakPages bool) ([]Page, []*TocHeading) {
+func DocToJSON(doc *docs.Document, imageFolder string, supportCodeBlock bool, breakPages bool) ([]Page, []*TocHeading) {
 	b := doc.Body
 	var toc []*TocHeading
 	ios := doc.InlineObjects
@@ -364,7 +372,7 @@ func DocToJSON(doc *docs.Document, supportCodeBlock bool, breakPages bool) ([]Pa
 			}
 
 			prev := b.Content[i-1].Paragraph
-			c := getParagraph(s.Paragraph, ios, lists, prev, &content)
+			c := getParagraph(s.Paragraph, imageFolder, ios, lists, prev, &content)
 			content = append(content, c...)
 		} else if s.Table != nil && len(s.Table.TableRows) > 0 {
 			tc := getTable(s.Table, supportCodeBlock)
