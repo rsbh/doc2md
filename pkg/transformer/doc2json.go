@@ -363,11 +363,8 @@ func DocToJSON(doc *docs.Document, imageFolder string, supportCodeBlock bool, br
 				headingID := s.Paragraph.ParagraphStyle.HeadingId
 				headingTag := s.Paragraph.ParagraphStyle.NamedStyleType
 
-				if headingTag == "HEADING_1" {
-					continue
-				}
 				isInToc, title := checkInToc(headingID, toc)
-				if isInToc && headingTag == "HEADING_2" {
+				if (isInToc && headingTag == "HEADING_2") || headingTag == "HEADING_1" {
 					if prevTitle != "" {
 						page := Page{prevTitle, content}
 						pages = append(pages, page)

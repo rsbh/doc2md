@@ -26,7 +26,7 @@ func (s *Service) GetFiles(folderID string, bc []string, rwg *sync.WaitGroup) {
 		log.Fatalf("Unable to retrieve files: %v", err)
 	}
 	if len(r.Files) == 0 {
-		fmt.Println("No Drives found.")
+		fmt.Println("No Files found. FolderID : ", folderID)
 	} else {
 		for _, i := range r.Files {
 			if i.MimeType == mimeTypeDocument {
