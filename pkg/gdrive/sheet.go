@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"path"
+	"sync"
 
 	"github.com/spf13/viper"
 )
@@ -27,8 +28,8 @@ func sheetToJSON(values [][]interface{}) []map[string]string {
 	return data
 }
 
-func (s *Service) fetchSheet(spreadsheetId string, name string, bc []string) {
-	// readRange := "Sheet1"
+func (s *Service) fetchSheet(spreadsheetId string, name string, bc []string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	resp, err := s.sheets.Spreadsheets.Get(spreadsheetId).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve data from sheet: %v", err)

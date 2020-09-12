@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sync"
 
 	t "github.com/rsbh/doc2md/pkg/transformer"
 	"github.com/spf13/viper"
@@ -28,7 +29,8 @@ type FrontMatter struct {
 }
 
 // FetchDoc fetch google doc from drive
-func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter) {
+func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter, wg *sync.WaitGroup) {
+	defer wg.Done()
 	outDir := viper.GetString("OutDir")
 	breakDoc := viper.GetBool("BreakDoc")
 	supportCodeBlock := viper.GetBool("SupportCodeBlock")

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/rsbh/doc2md/internals/auth"
@@ -42,6 +43,7 @@ func readConfig(cfgFile string) {
 }
 
 func runRootCmd(cmd *cobra.Command, args []string) {
+	var wg sync.WaitGroup
 	clientID, clientSercet := auth.GetClientCredentials()
 	cfgFile, _ := cmd.Flags().GetString("config")
 	tokenFile, _ := cmd.Flags().GetString("token")
@@ -55,13 +57,16 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 
 	if len(configuration.DocIDs) > 0 {
 		for _, ID := range configuration.DocIDs {
-			s.FetchDoc(ID, nil, gdrive.FrontMatter{})
+			wg.Add(1)
+			go s.FetchDoc(ID, nil, gdrive.FrontMatter{}, &wg)
 		}
 	}
 
 	if configuration.FolderID != "" {
-		s.GetFiles(configuration.FolderID, nil)
+		wg.Add(1)
+		go s.GetFiles(configuration.FolderID, nil, &wg)
 	}
+	wg.Wait()
 	fmt.Println(time.Since(start))
 }
 
