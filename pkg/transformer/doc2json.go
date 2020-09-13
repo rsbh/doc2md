@@ -62,6 +62,9 @@ func getText(e *docs.ParagraphElement, ignoreLineBreak bool, isHeader bool) stri
 	if e.TextRun.TextStyle.Link != nil && !isEmptyString {
 		text = fmt.Sprintf("[%v](%v)", text, e.TextRun.TextStyle.Link.Url)
 	}
+	if isHeader {
+		text = text + "\n"
+	}
 	return text
 }
 
@@ -107,9 +110,7 @@ func getTagContent(p *docs.Paragraph, tag string, imageFolder string, ios map[st
 		for _, tc := range tagContent {
 			a = append(a, tc[tag].Text)
 		}
-		s := strings.Join(a, " ")
-		s = strings.ReplaceAll(s, " .", ".")
-		s = strings.ReplaceAll(s, " ,", ",")
+		s := joinStrings(a)
 		return []TagContent{{tag: {s, ImageObject{}, Table{}, CodeBlock{}, []string{}}}}
 	} else {
 		return tagContent
@@ -165,10 +166,7 @@ func getParagraph(p *docs.Paragraph, imageFolder string, ios map[string]docs.Inl
 				bulletContents = append(bulletContents, s.Text)
 			}
 		}
-		bc := strings.Join(bulletContents, " ")
-		bc = strings.ReplaceAll(bc, " .", ".")
-		bc = strings.ReplaceAll(bc, " ,", ",")
-
+		bc := joinStrings(bulletContents)
 		if listID == prevID {
 			c := *contents
 			last := c[len(c)-1][listTag].List
@@ -244,6 +242,13 @@ func getToc(data *docs.TableOfContents) []*TocHeading {
 	return toc
 }
 
+func joinStrings(sa []string) string {
+	s := strings.Join(sa, " ")
+	s = strings.ReplaceAll(s, " .", ".")
+	s = strings.ReplaceAll(s, " ,", ",")
+	return s
+}
+
 func getTextFromParagraph(p *docs.Paragraph, ignoreLineBreak bool) string {
 	var sa []string
 	for _, e := range p.Elements {
@@ -254,9 +259,7 @@ func getTextFromParagraph(p *docs.Paragraph, ignoreLineBreak bool) string {
 			sa = append(sa, "")
 		}
 	}
-	s := strings.Join(sa, " ")
-	s = strings.ReplaceAll(s, " .", ".")
-	s = strings.ReplaceAll(s, " ,", ",")
+	s := joinStrings(sa)
 	return s
 }
 

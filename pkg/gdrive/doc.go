@@ -74,7 +74,7 @@ func saveDoc(p t.Page, meta FrontMatter, outPath string, wg *sync.WaitGroup) {
 	fileName := fmt.Sprintf("%v.md", p.Title)
 
 	md := t.JSONToMD(p.Contents)
-	data := fmt.Sprintf("---\n%v\n---\n\n%v", string(frontMatter), md)
+	data := fmt.Sprintf("---\n%v---\n\n%v", string(frontMatter), md)
 
 	content := []byte(data)
 	d := FetchedDoc{outPath, fileName, content}
