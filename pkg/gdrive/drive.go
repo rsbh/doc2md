@@ -17,9 +17,7 @@ func generateQuery(folderID string) string {
 
 // GetFiles return google drive files
 func (s *Service) GetFiles(folderID string, bc []string, rwg *sync.WaitGroup) {
-	defer rwg.Done()
 	var wg sync.WaitGroup
-	defer wg.Wait()
 	query := generateQuery(folderID)
 	r, err := s.drive.Files.List().SupportsTeamDrives(true).IncludeTeamDriveItems(true).Q(query).Fields("files(id, name, mimeType, description, createdTime, modifiedTime, lastModifyingUser)").Do()
 	if err != nil {
@@ -45,4 +43,6 @@ func (s *Service) GetFiles(folderID string, bc []string, rwg *sync.WaitGroup) {
 			}
 		}
 	}
+	wg.Wait()
+	rwg.Done()
 }

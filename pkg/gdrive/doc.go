@@ -29,8 +29,9 @@ type FrontMatter struct {
 }
 
 // FetchDoc fetch google doc from drive
-func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter, rwg *sync.WaitGroup) {
+	var wg sync.WaitGroup
+
 	outDir := viper.GetString("OutDir")
 	breakDoc := viper.GetBool("BreakDoc")
 	supportCodeBlock := viper.GetBool("SupportCodeBlock")
@@ -51,19 +52,8 @@ func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter, wg *sync
 	pages, toc := t.DocToJSON(doc, imageFolder, supportCodeBlock, breakDoc)
 
 	for _, p := range pages {
-		meta.Title = p.Title
-		frontMatter, err := yaml.Marshal(&meta)
-		if err != nil {
-			log.Fatalf("error: %v", err)
-		}
-		fileName := fmt.Sprintf("%v.md", p.Title)
-
-		md := t.JSONToMD(p.Contents)
-		data := fmt.Sprintf("---\n%v\n---\n\n%v", string(frontMatter), md)
-
-		content := []byte(data)
-		d := FetchedDoc{outPath, fileName, content}
-		d.SaveToFile()
+		wg.Add(1)
+		go saveDoc(p, meta, outPath, &wg)
 	}
 	prettyToc, err := json.MarshalIndent(toc, "", "    ")
 	if err != nil {
@@ -71,6 +61,25 @@ func (s *Service) FetchDoc(docID string, bc []string, meta FrontMatter, wg *sync
 	}
 	t := FetchedDoc{outPath, "toc.json", prettyToc}
 	t.SaveToFile()
+	wg.Wait()
+	rwg.Done()
+}
+
+func saveDoc(p t.Page, meta FrontMatter, outPath string, wg *sync.WaitGroup) {
+	meta.Title = p.Title
+	frontMatter, err := yaml.Marshal(&meta)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+	fileName := fmt.Sprintf("%v.md", p.Title)
+
+	md := t.JSONToMD(p.Contents)
+	data := fmt.Sprintf("---\n%v\n---\n\n%v", string(frontMatter), md)
+
+	content := []byte(data)
+	d := FetchedDoc{outPath, fileName, content}
+	d.SaveToFile()
+	wg.Done()
 }
 
 func (d FetchedDoc) SaveToFile() {

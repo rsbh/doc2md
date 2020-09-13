@@ -281,7 +281,7 @@ func getTableCellContent(content []*docs.StructuralElement) string {
 
 type CodeBlock struct {
 	Lang    string
-	Content string
+	Content []string
 }
 
 func getCodeBlock(cell *docs.TableCell) CodeBlock {
@@ -293,7 +293,8 @@ func getCodeBlock(cell *docs.TableCell) CodeBlock {
 			}
 		}
 	}
-	code := strings.Join(codeArr, "")
+	codeStr := strings.Join(codeArr, "")
+	code := strings.Split(codeStr, "\u000b")
 	return CodeBlock{"sh", code}
 }
 

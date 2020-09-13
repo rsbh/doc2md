@@ -29,7 +29,6 @@ func sheetToJSON(values [][]interface{}) []map[string]string {
 }
 
 func (s *Service) fetchSheet(spreadsheetId string, name string, bc []string, wg *sync.WaitGroup) {
-	defer wg.Done()
 	resp, err := s.sheets.Spreadsheets.Get(spreadsheetId).Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve data from sheet: %v", err)
@@ -50,7 +49,7 @@ func (s *Service) fetchSheet(spreadsheetId string, name string, bc []string, wg 
 		fileName := fmt.Sprintf("%v.json", ranges[i])
 		saveSheet(data, name, fileName, bc)
 	}
-
+	wg.Done()
 }
 
 func saveSheet(data []map[string]string, folder string, fileName string, bc []string) {

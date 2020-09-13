@@ -39,7 +39,7 @@ func getTableTag(t Table) string {
 }
 
 func getCodeTag(c CodeBlock) string {
-	return "```" + c.Lang + "\n" + c.Content + "```"
+	return "```" + c.Lang + "\n" + strings.Join(c.Content, "\n") + "```"
 }
 
 func convertOrderedList(list []string) string {
