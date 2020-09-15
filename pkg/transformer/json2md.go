@@ -59,35 +59,31 @@ func convertUnorderedList(list []string) string {
 }
 
 //JSONToMD convert json to markdown
-func JSONToMD(json []TagContent) string {
+func JSONToMD(json []Tag) string {
 	var content []string
 	for _, j := range json {
-		keys := make([]string, 0, len(j))
-		for k := range j {
-			keys = append(keys, k)
-		}
-		key := keys[0]
+		key := j.Name
 		i, ok := headings[key]
 		if ok {
-			s := getHeader(j[key].Text, i)
+			s := getHeader(j.Content.Text, i)
 			content = append(content, s, "\n")
 		} else if key == "p" {
-			s := j[key].Text
+			s := j.Content.Text
 			content = append(content, s, "\n")
 		} else if key == "img" {
-			i := getImageTag(j[key].Image)
+			i := getImageTag(j.Content.Image)
 			content = append(content, i, "\n")
 		} else if key == "table" {
-			t := getTableTag(j[key].Table)
+			t := getTableTag(j.Content.Table)
 			content = append(content, t, "\n")
 		} else if key == "code" {
-			c := getCodeTag(j[key].CodeBlock)
+			c := getCodeTag(j.Content.CodeBlock)
 			content = append(content, c, "\n")
 		} else if key == "ol" {
-			list := convertOrderedList(j[key].List)
+			list := convertOrderedList(j.Content.List)
 			content = append(content, list, "\n")
 		} else if key == "ul" {
-			list := convertUnorderedList(j[key].List)
+			list := convertUnorderedList(j.Content.List)
 			content = append(content, list, "\n")
 		} else {
 
