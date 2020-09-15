@@ -30,6 +30,7 @@ func readConfig(cfgFile string) {
 	viper.SetDefault("outDir", defaultOutDir)
 	viper.SetDefault("breakDoc", false)
 	viper.SetDefault("supportCodeBlock", false)
+	viper.SetDefault("extendedQuery", "")
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("Error reading config file, %s", err)
@@ -62,10 +63,9 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if configuration.FolderID != "" {
-		wg.Add(1)
-		go s.GetFiles(configuration.FolderID, nil, &wg)
-	}
+	wg.Add(1)
+	go s.GetFiles(configuration.FolderID, nil, &wg)
+
 	wg.Wait()
 	fmt.Println(time.Since(start))
 }

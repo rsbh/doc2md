@@ -15,3 +15,4 @@ Fetch google docs from drive and save them as markdown in local
 | outDir           | Output Destination                                                                                         | "out    |
 | breakDoc         | Add support to break pages as per Table of contents (Experimetal)                                          | false   |
 | supportCodeBlock | Add support for CodeBlocks (Experimetal)                                                                   | false   |
+| extendedQuery    | Need to extend the drive list files query                                                                  | ""      |

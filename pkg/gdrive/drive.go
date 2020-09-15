@@ -4,14 +4,18 @@ import (
 	"fmt"
 	"log"
 	"sync"
+
+	"github.com/spf13/viper"
 )
 
 func generateQuery(folderID string) string {
+	extendedQuery := viper.GetString("extendedQuery")
+
 	var f = ""
 	if folderID != "" {
 		f = fmt.Sprintf("'%v' in parents and ", folderID)
 	}
-	query := fmt.Sprintf("%v(mimeType='%v' or mimeType='%v' or mimeType='%v') and trashed = false", f, mimeTypeDocument, mimeTypeFolder, mimeTypeSheet)
+	query := fmt.Sprintf("%v(mimeType='%v' or mimeType='%v' or mimeType='%v') and trashed = false %v", f, mimeTypeDocument, mimeTypeFolder, mimeTypeSheet, extendedQuery)
 	return query
 }
 

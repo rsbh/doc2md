@@ -7,4 +7,5 @@ type Configurations struct {
 	OutDir           string   `json:"outDir" yaml:"outDir"`
 	BreakDoc         bool     `json:"breakDoc" yaml:"breakDoc"`
 	SupportCodeBlock bool     `json:"supportCodeBlock" yaml:"supportCodeBlock"`
+	ExtendendQuery   bool     `json:"extendedQuery" yaml:"extendedQuery"`
 }
