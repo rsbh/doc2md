@@ -31,35 +31,41 @@ func cleanText(text string, ignoreLineBreak bool) string {
 	return strings.TrimSpace(s)
 }
 
-func getText(e *docs.ParagraphElement, ignoreLineBreak bool, isHeader bool) string {
-	text := e.TextRun.Content
-
+func replaceTags(text string) string {
 	re1 := regexp2.MustCompile(`<(?![<br/>])`, 0)
-	if isMatch, _ := re1.MatchString(text); isMatch {
+	re2 := regexp2.MustCompile(`>`, 0)
+	isMatch1, _ := re1.MatchString(text)
+	isMatch2, _ := re2.MatchString(text)
+	if isMatch1 && isMatch2 {
 		text, _ = re1.Replace(text, "&lt;", -1, -1)
-	}
-
-	re2 := regexp2.MustCompile(`/>`, 0)
-	if isMatch, _ := re2.MatchString(text); isMatch {
 		text, _ = re2.Replace(text, "&gt;", -1, -1)
 	}
+	return text
+}
 
+func getText(e *docs.ParagraphElement, ignoreLineBreak bool, isHeader bool) string {
+	text := e.TextRun.Content
+	text = replaceTags(text)
 	isEmptyString := len(text) == 0
+	if isEmptyString {
+		return ""
+	}
+
 	text = cleanText(text, ignoreLineBreak)
 
-	if e.TextRun.TextStyle.Italic && !isEmptyString {
+	if e.TextRun.TextStyle.Italic {
 		text = fmt.Sprintf("_%v_", text)
 	}
 
-	if e.TextRun.TextStyle.Bold && !isHeader && !isEmptyString {
+	if e.TextRun.TextStyle.Bold && !isHeader {
 		text = fmt.Sprintf("**%v**", text)
 	}
 
-	if e.TextRun.TextStyle.Strikethrough && !isEmptyString {
+	if e.TextRun.TextStyle.Strikethrough {
 		text = fmt.Sprintf("~~%v~~", text)
 	}
 
-	if e.TextRun.TextStyle.Link != nil && !isEmptyString {
+	if e.TextRun.TextStyle.Link != nil {
 		text = fmt.Sprintf("[%v](%v)", text, e.TextRun.TextStyle.Link.Url)
 	}
 	if isHeader {
