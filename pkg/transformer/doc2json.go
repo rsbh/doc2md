@@ -46,7 +46,9 @@ func replaceTags(text string) string {
 func getText(e *docs.ParagraphElement, ignoreLineBreak bool, isHeader bool) string {
 	text := e.TextRun.Content
 	text = replaceTags(text)
+
 	isEmptyString := len(text) == 0
+
 	if isEmptyString {
 		return ""
 	}
