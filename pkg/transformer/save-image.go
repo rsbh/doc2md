@@ -20,9 +20,10 @@ func httpClient() *http.Client {
 	return &client
 }
 
-func ReplaceImage(fullUrlFile string) (string, []byte) {
+// ReplaceImage fetch image from the link
+func ReplaceImage(fullURLFile string) (string, []byte) {
 	client := httpClient()
-	fileURL, err := url.Parse(fullUrlFile)
+	fileURL, err := url.Parse(fullURLFile)
 	path := fileURL.Path
 	segments := strings.Split(path, "/")
 
@@ -30,7 +31,7 @@ func ReplaceImage(fullUrlFile string) (string, []byte) {
 	if err != nil {
 		panic(err)
 	}
-	resp, err := client.Get(fullUrlFile)
+	resp, err := client.Get(fullURLFile)
 
 	if err != nil {
 		panic(err)
