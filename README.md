@@ -1,6 +1,6 @@
 # doc2md
 
-[![Coverage Status](https://coveralls.io/repos/github/rsbh/doc2md/badge.svg)](https://coveralls.io/github/rsbh/doc2md)
+[![Coverage Status](https://coveralls.io/repos/github/rsbh/doc2md/badge.svg)](https://coveralls.io/github/rsbh/doc2md) [![Go Report Card](https://goreportcard.com/badge/github.com/rsbh/doc2md)](https://goreportcard.com/report/github.com/rsbh/doc2md)
 
 Fetch google docs from drive and save them as markdown in local
 
