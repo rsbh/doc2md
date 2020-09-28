@@ -1,13 +1,9 @@
 name: Tests
 on: [push, pull_request]
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-
+  test:
+    name: Test with Coverage
+    runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.15
         uses: actions/setup-go@v2
@@ -21,4 +17,13 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -race ./...
+        run: |
+          go test -race -covermode atomic -coverprofile=covprofile ./...
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+        run: goveralls -coverprofile=covprofile -service=github

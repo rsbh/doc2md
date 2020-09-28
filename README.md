@@ -1,5 +1,7 @@
 # doc2md
 
+[![Coverage Status](https://coveralls.io/repos/github/rsbh/doc2md/badge.svg)](https://coveralls.io/github/rsbh/doc2md)
+
 Fetch google docs from drive and save them as markdown in local
 
 - Supports Fetching Spreadsheets
