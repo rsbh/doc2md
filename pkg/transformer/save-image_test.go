@@ -44,8 +44,8 @@ func TestGetFileName(t *testing.T) {
 
 	t.Run("should return change extension by Content Type", func(t *testing.T) {
 		url := "http://example.com/a/b"
-		got := getFileName(url, "image/jpeg")
-		want := "b.jpg"
+		got := getFileName(url, "image/webp")
+		want := "b.webp"
 		assert.Equal(t, want, got)
 	})
 }
