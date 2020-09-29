@@ -9,37 +9,37 @@ import (
 	"strings"
 )
 
-func httpClient() *http.Client {
-	client := http.Client{
-		CheckRedirect: func(r *http.Request, via []*http.Request) error {
-			r.URL.Opaque = r.URL.Path
-			return nil
-		},
-	}
-
-	return &client
-}
-
 // ReplaceImage fetch image from the link
 func ReplaceImage(fullURLFile string) (string, []byte) {
-	client := httpClient()
-	fileURL, err := url.Parse(fullURLFile)
-	path := fileURL.Path
-	segments := strings.Split(path, "/")
+	client := http.Client{}
 
-	fileName := segments[len(segments)-1]
+	fileURL, err := url.Parse(fullURLFile)
 	if err != nil {
 		panic(err)
 	}
-	resp, err := client.Get(fullURLFile)
 
+	path := fileURL.Path
+	segments := strings.Split(path, "/")
+	fileName := segments[len(segments)-1]
+
+	req, err := http.NewRequest("GET", fullURLFile, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
 
 	defer resp.Body.Close()
 	Ctype := resp.Header.Get("Content-Type")
-	ext, _ := mime.ExtensionsByType(Ctype)
+
+	ext, err := mime.ExtensionsByType(Ctype)
+	if err != nil {
+		panic(err)
+	}
+
 	outputFile := fmt.Sprintf("%v%v", fileName, ext[0])
 	image, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

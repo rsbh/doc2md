@@ -14,5 +14,6 @@ require (
 	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
 	google.golang.org/api v0.31.0
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d // indirect
+	gopkg.in/h2non/gock.v1 v1.0.15
 	gopkg.in/yaml.v2 v2.3.0
 )
