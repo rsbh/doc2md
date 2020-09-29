@@ -22,7 +22,30 @@ func TestReplaceImage(t *testing.T) {
 
 		fileName, image := ReplaceImage(src)
 		want := "img.png"
-		assert.Equal(t, fileName, want)
-		assert.Equal(t, image, xbody)
+		assert.Equal(t, want, fileName)
+		assert.Equal(t, xbody, image)
+	})
+}
+
+func TestGetFileName(t *testing.T) {
+	t.Run("should return filename from url", func(t *testing.T) {
+		url := "http://example.com/a"
+		got := getFileName(url, "image/png")
+		want := "a.png"
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return filename from nexted url", func(t *testing.T) {
+		url := "http://example.com/a/b"
+		got := getFileName(url, "image/png")
+		want := "b.png"
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return change extension by Content Type", func(t *testing.T) {
+		url := "http://example.com/a/b"
+		got := getFileName(url, "image/jpeg")
+		want := "b.jpg"
+		assert.Equal(t, want, got)
 	})
 }
