@@ -27,7 +27,7 @@ func TestCleanText(t *testing.T) {
 	})
 }
 
-func textReplaceTags(t *testing.T) {
+func TestReplaceTags(t *testing.T) {
 	t.Run("should replace html tag with `&lt;` and `&gt;`", func(t *testing.T) {
 		text := "<hello/> foo bar"
 		got := replaceTags(text)
@@ -38,7 +38,7 @@ func textReplaceTags(t *testing.T) {
 	t.Run("should not replace <br/> tag", func(t *testing.T) {
 		text := "<br/> foo bar"
 		got := replaceTags(text)
-		want := "&lt;hello/&gt; foo bar"
+		want := "<br/> foo bar"
 		assert.Equal(t, want, got)
 	})
 }
@@ -142,6 +142,88 @@ func TestGetText(t *testing.T) {
 		}
 		got := getText(p, true, false)
 		want := "[Hello World](http://example.com)"
+		assert.Equal(t, want, got)
+	})
+}
+
+func TestGetListType(t *testing.T) {
+	t.Run("should return ol by default", func(t *testing.T) {
+		list := map[string]docs.List{}
+		got := getListType(list, "")
+		want := "ol"
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return ol if NestingLevel is empty", func(t *testing.T) {
+		list := map[string]docs.List{
+			"abc": docs.List{
+				ListProperties: &docs.ListProperties{
+					NestingLevels: []*docs.NestingLevel{},
+				},
+			},
+		}
+		got := getListType(list, "abc")
+		want := "ol"
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return ol if GyphType is not empty", func(t *testing.T) {
+		list := map[string]docs.List{
+			"abc": docs.List{
+				ListProperties: &docs.ListProperties{
+					NestingLevels: []*docs.NestingLevel{
+						&docs.NestingLevel{
+							GlyphType: "DECIMAL",
+						},
+					},
+				},
+			},
+		}
+		got := getListType(list, "abc")
+		want := "ol"
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return ul if GyphType is empty", func(t *testing.T) {
+		list := map[string]docs.List{
+			"abc": docs.List{
+				ListProperties: &docs.ListProperties{
+					NestingLevels: []*docs.NestingLevel{
+						&docs.NestingLevel{
+							GlyphType: "",
+						},
+					},
+				},
+			},
+		}
+		got := getListType(list, "abc")
+		want := "ul"
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should find the list id from list", func(t *testing.T) {
+		list := map[string]docs.List{
+			"abc": docs.List{
+				ListProperties: &docs.ListProperties{
+					NestingLevels: []*docs.NestingLevel{
+						&docs.NestingLevel{
+							GlyphType: "",
+						},
+					},
+				},
+			},
+			"xyz": docs.List{
+				ListProperties: &docs.ListProperties{
+					NestingLevels: []*docs.NestingLevel{
+						&docs.NestingLevel{
+							GlyphType: "ROMAN",
+						},
+					},
+				},
+			},
+		}
+		got := getListType(list, "xyz")
+		want := "ol"
 		assert.Equal(t, want, got)
 	})
 }

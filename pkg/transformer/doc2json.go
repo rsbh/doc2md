@@ -128,12 +128,19 @@ func getTagContent(p *docs.Paragraph, tag string, imageFolder string, ios map[st
 }
 
 func getListType(lists map[string]docs.List, listID string) string {
-	t := "ol"
-	gt := lists[listID].ListProperties.NestingLevels[0].GlyphType
-	if gt == "" {
-		t = "ul"
+	tag := "ol"
+	if val, ok := lists[listID]; ok {
+		nestingLevels := val.ListProperties.NestingLevels
+		if len(nestingLevels) > 0 {
+			glyphType := nestingLevels[0].GlyphType
+			if glyphType == "" {
+				tag = "ul"
+			}
+		}
+
 	}
-	return t
+
+	return tag
 }
 
 func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElement, imageFolder string) TagContent {
