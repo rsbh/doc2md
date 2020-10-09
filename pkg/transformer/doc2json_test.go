@@ -227,3 +227,30 @@ func TestGetListType(t *testing.T) {
 		assert.Equal(t, want, got)
 	})
 }
+
+func TestGetNestedListIndent(t *testing.T) {
+	t.Run("should return dash without indent on level: 0, tag:ul", func(t *testing.T) {
+		got := getNestedListIndent(0, "ul")
+		want := "- "
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return number without indent on level: 0, tag:ol", func(t *testing.T) {
+		got := getNestedListIndent(0, "ol")
+		want := "1. "
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return number with 3 tab indent on level: 3, tag:ol", func(t *testing.T) {
+		got := getNestedListIndent(3, "ol")
+		want := "      1. "
+		assert.Equal(t, want, got)
+	})
+
+	t.Run("should return dash with 3 tab indent on level: 3, tag:ul", func(t *testing.T) {
+		got := getNestedListIndent(3, "ul")
+		want := "      - "
+		assert.Equal(t, want, got)
+	})
+
+}

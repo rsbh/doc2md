@@ -137,9 +137,7 @@ func getListType(lists map[string]docs.List, listID string) string {
 				tag = "ul"
 			}
 		}
-
 	}
-
 	return tag
 }
 
