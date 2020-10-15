@@ -106,12 +106,12 @@ func getTagContent(p *docs.Paragraph, tag string, imageFolder string, ios map[st
 		tr := e.TextRun
 		if e.InlineObjectElement != nil {
 			i := getImage(ios, imageFolder, e.InlineObjectElement.InlineObjectId)
-			x := Tag{"img", TagContent{"", i, Table{}, CodeBlock{}, []string{}}}
+			x := Tag{"img", TagContent{Image: i}}
 			tagContent = append(tagContent, x)
 		} else if tr != nil && tr.Content != "\n" {
 			// headingID := p.ParagraphStyle.HeadingId
 			text := getText(e, true, isHeader)
-			x := Tag{tag, TagContent{text, ImageObject{}, Table{}, CodeBlock{}, []string{}}}
+			x := Tag{tag, TagContent{Text: text}}
 			tagContent = append(tagContent, x)
 		}
 	}
@@ -122,7 +122,7 @@ func getTagContent(p *docs.Paragraph, tag string, imageFolder string, ios map[st
 			a = append(a, tc.Content.Text)
 		}
 		s := joinStrings(a)
-		return []Tag{{tag, TagContent{s, ImageObject{}, Table{}, CodeBlock{}, []string{}}}}
+		return []Tag{{tag, TagContent{Text: s}}}
 	}
 	return tagContent
 }
@@ -146,10 +146,10 @@ func getBulletContents(ios map[string]docs.InlineObject, e *docs.ParagraphElemen
 	if e.InlineObjectElement != nil {
 		i := getImage(ios, imageFolder, e.InlineObjectElement.InlineObjectId)
 		t := getImageTag(i)
-		s = TagContent{t, i, Table{}, CodeBlock{}, []string{}}
+		s = TagContent{Text: t, Image: i}
 	} else {
 		t := getText(e, true, false)
-		s = TagContent{t, ImageObject{}, Table{}, CodeBlock{}, []string{}}
+		s = TagContent{Text: t}
 	}
 	return s
 }
@@ -193,11 +193,11 @@ func getParagraph(p *docs.Paragraph, imageFolder string, ios map[string]docs.Inl
 				last[lastIndex] += fmt.Sprintf("\n%v %v", indent, bc)
 			} else {
 				last = append(last, bc)
-				c[len(c)-1] = Tag{listTag, TagContent{"", ImageObject{}, Table{}, CodeBlock{}, last}}
+				c[len(c)-1] = Tag{listTag, TagContent{List: last}}
 				*contents = c
 			}
 		} else {
-			tc = append(tc, Tag{listTag, TagContent{"", ImageObject{}, Table{}, CodeBlock{}, []string{bc}}})
+			tc = append(tc, Tag{listTag, TagContent{List: []string{bc}}})
 		}
 	} else {
 		t := p.ParagraphStyle.NamedStyleType
@@ -319,7 +319,7 @@ func getTable(t *docs.Table, supportCodeBlock bool) Tag {
 	if supportCodeBlock && t.Rows == 1 && t.Columns == 1 {
 		cell := t.TableRows[0].TableCells[0]
 		cb := getCodeBlock(cell)
-		return Tag{"code", TagContent{"", ImageObject{}, Table{}, cb, []string{}}}
+		return Tag{"code", TagContent{CodeBlock: cb}}
 	} else {
 		thead, tbody := t.TableRows[0], t.TableRows[1:]
 		var header []string
@@ -336,7 +336,7 @@ func getTable(t *docs.Table, supportCodeBlock bool) Tag {
 			}
 			rows = append(rows, temp)
 		}
-		return Tag{"table", TagContent{"", ImageObject{}, Table{header, rows}, CodeBlock{}, []string{}}}
+		return Tag{"table", TagContent{Table: Table{header, rows}}}
 	}
 }
 
