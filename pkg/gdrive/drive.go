@@ -6,11 +6,11 @@ import (
 	"sync"
 
 	"github.com/spf13/viper"
+	"google.golang.org/api/drive/v3"
 )
 
 func generateQuery(folderID string) string {
 	extendedQuery := viper.GetString("extendedQuery")
-
 	var f = ""
 	if folderID != "" {
 		f = fmt.Sprintf("'%v' in parents and ", folderID)
@@ -19,18 +19,23 @@ func generateQuery(folderID string) string {
 	return query
 }
 
-// GetFiles return google drive files
-func (s *Service) GetFiles(folderID string, bc []string, rwg *sync.WaitGroup) {
-	var wg sync.WaitGroup
-	query := generateQuery(folderID)
+func (s *Service) getFiles(query string) []*drive.File {
 	r, err := s.drive.Files.List().SupportsTeamDrives(true).IncludeTeamDriveItems(true).Q(query).Fields("files(id, name, mimeType, description, createdTime, modifiedTime, lastModifyingUser)").Do()
 	if err != nil {
 		log.Fatalf("Unable to retrieve files: %v", err)
 	}
-	if len(r.Files) == 0 {
+	return r.Files
+}
+
+// GetFiles return google drive files
+func (s *Service) GetFiles(folderID string, bc []string, rwg *sync.WaitGroup) {
+	var wg sync.WaitGroup
+	query := generateQuery(folderID)
+	files := s.getFiles(query)
+	if len(files) == 0 {
 		fmt.Println("No Files found. FolderID : ", folderID)
 	} else {
-		for _, i := range r.Files {
+		for _, i := range files {
 			if i.MimeType == mimeTypeDocument {
 				wg.Add(1)
 				meta := FrontMatter{"", i.Description, i.LastModifyingUser.DisplayName, i.ModifiedTime, i.CreatedTime}
