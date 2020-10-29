@@ -62,9 +62,10 @@ func runRootCmd(cmd *cobra.Command, args []string) {
 			go s.FetchDoc(ID, nil, gdrive.FrontMatter{}, &wg)
 		}
 	}
-
-	wg.Add(1)
-	go s.GetFiles(configuration.FolderID, nil, &wg)
+	if configuration.FolderID != "" {
+		wg.Add(1)
+		go s.GetFiles(configuration.FolderID, nil, &wg)
+	}
 
 	wg.Wait()
 	fmt.Println(time.Since(start))
